@@ -37,6 +37,10 @@ export default function MapView() {
   const [likedOnly, setLikedOnly] = useState(false);
   const [mapPopupId, setMapPopupId] = useState<number | null>(null);
 
+  const [focusToken, setFocusToken] = useState(0);
+  const [mobilePane, setMobilePane] = useState<"map" | "list">("map");
+  const [shareOpen, setShareOpen] = useState(false);
+
   const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingLooking, setPendingLooking] = useState(false);
   const [quickAdd, setQuickAdd] = useState<QuickAddState>(EMPTY_QUICK_ADD);
@@ -57,16 +61,25 @@ export default function MapView() {
   const shareSpot = spots.find((s) => s.id === shareId) ?? spots[0];
   const popupSpot = spots.find((s) => s.id === mapPopupId) ?? null;
 
-  const selectSpot = (id: number) => {
+  const selectSpot = (id: number, opts: { focus?: boolean; openPopup?: boolean } = {}) => {
+    const { focus = false, openPopup = focus } = opts;
     setSelectedId(id);
     setShareId(id);
     setPendingLocation(null);
-    setMapPopupId(null);
+    setMapPopupId(openPopup ? id : null);
+    if (focus) {
+      setFocusToken((t) => t + 1);
+      setMobilePane("map");
+    }
+  };
+
+  const handleShare = (id: number) => {
+    setShareId(id);
+    setShareOpen(true);
   };
 
   const handleMarkerClick = (id: number) => {
-    selectSpot(id);
-    setMapPopupId(id);
+    selectSpot(id, { openPopup: true });
   };
 
   const toggleLike = (id: number) => {
@@ -141,7 +154,7 @@ export default function MapView() {
     }
     setSpots((prev) => [...prev, newSpot]);
     setAddError(null);
-    selectSpot(newSpot.id);
+    selectSpot(newSpot.id, { focus: true });
   };
 
   return (
@@ -177,8 +190,41 @@ export default function MapView() {
         地図の空いている場所やお店のアイコンをクリックすると、その場で新しい行きたい場所を投稿できます。
       </p>
 
+      <div className="grid grid-cols-2 gap-2 md:hidden" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobilePane === "map"}
+          onClick={() => setMobilePane("map")}
+          className={`rounded-md border px-3 py-2 text-sm font-medium ${
+            mobilePane === "map"
+              ? "border-neutral-900 bg-neutral-900 text-white"
+              : "border-neutral-300 bg-white text-neutral-900"
+          }`}
+        >
+          🗺️ 地図
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobilePane === "list"}
+          onClick={() => setMobilePane("list")}
+          className={`rounded-md border px-3 py-2 text-sm font-medium ${
+            mobilePane === "list"
+              ? "border-neutral-900 bg-neutral-900 text-white"
+              : "border-neutral-300 bg-white text-neutral-900"
+          }`}
+        >
+          📋 一覧（{listSpots.length}）
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_300px]">
-        <div className="h-[460px] overflow-hidden rounded-lg border border-neutral-200 bg-white">
+        <div
+          className={`h-[calc(100vh-220px)] min-h-[420px] overflow-hidden rounded-lg border border-neutral-200 bg-white md:block md:h-[680px] ${
+            mobilePane === "map" ? "block" : "hidden"
+          }`}
+        >
           <GoogleMapView
             spots={mapSpots}
             onMarkerClick={handleMarkerClick}
@@ -186,6 +232,8 @@ export default function MapView() {
             onSuggestion={handleSuggestion}
             pendingLocation={pendingLocation}
             onCancelAdd={cancelAdd}
+            focusLocation={{ lat: selectedSpot.lat, lng: selectedSpot.lng }}
+            focusToken={focusToken}
             addContent={
               pendingLocation ? (
                 <QuickAddPanel
@@ -203,32 +251,33 @@ export default function MapView() {
             onClosePopup={() => setMapPopupId(null)}
             popupContent={
               popupSpot ? (
-                <div className="w-[200px] text-neutral-900">
-                  <p className="text-sm font-medium">{popupSpot.name}</p>
-                  <p className="text-xs text-neutral-600">{popupSpot.area}</p>
-                  <button
-                    onClick={() => toggleLike(popupSpot.id)}
-                    className={`mt-2 w-full rounded-md border px-3 py-1.5 text-xs font-medium ${
-                      likedIds.has(popupSpot.id)
-                        ? "border-red-200 bg-red-50 text-red-800"
-                        : "border-neutral-300 bg-white text-neutral-900"
-                    }`}
-                  >
-                    {likedIds.has(popupSpot.id) ? "♥" : "♡"} 行きたい（{popupSpot.likes}）
-                  </button>
+                <div className="max-h-[65vh] w-[300px] overflow-y-auto pr-1 text-neutral-900">
+                  <SpotDetail
+                    spot={popupSpot}
+                    allSpots={spots}
+                    liked={likedIds.has(popupSpot.id)}
+                    onToggleLike={toggleLike}
+                    onAddComment={addComment}
+                    onShare={handleShare}
+                    onJumpTo={(id) => selectSpot(id, { focus: true })}
+                  />
                 </div>
               ) : null
             }
           />
         </div>
-        <div className="h-[460px] overflow-hidden rounded-lg border border-neutral-200 bg-white">
+        <div
+          className={`h-[calc(100vh-220px)] min-h-[420px] overflow-hidden rounded-lg border border-neutral-200 bg-white md:block md:h-[680px] ${
+            mobilePane === "list" ? "block" : "hidden"
+          }`}
+        >
           {listSpots.length > 0 ? (
             <SpotList
               spots={listSpots}
               selectedId={selectedId}
               likedIds={likedIds}
-              onSelect={selectSpot}
-              onShare={setShareId}
+              onSelect={(id) => selectSpot(id, { focus: true })}
+              onShare={handleShare}
               onToggleLike={toggleLike}
             />
           ) : (
@@ -241,23 +290,29 @@ export default function MapView() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 className="mb-3 text-sm font-medium text-neutral-900">場所の詳細</h3>
-        <SpotDetail
-          spot={selectedSpot}
-          allSpots={spots}
-          liked={likedIds.has(selectedSpot.id)}
-          onToggleLike={toggleLike}
-          onAddComment={addComment}
-          onShare={setShareId}
-          onJumpTo={selectSpot}
-        />
-      </div>
-
-      <div className="rounded-lg border border-neutral-200 bg-white p-4">
-        <h3 className="mb-3 text-sm font-medium text-neutral-900">シェア画像を自動生成</h3>
-        <ShareCard spot={shareSpot} />
-      </div>
+      {shareOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShareOpen(false)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-medium text-neutral-900">シェア画像を自動生成</h3>
+              <button
+                onClick={() => setShareOpen(false)}
+                aria-label="閉じる"
+                className="rounded-md px-2 py-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
+              >
+                ✕
+              </button>
+            </div>
+            <ShareCard spot={shareSpot} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { APIProvider, InfoWindow, Map, Marker, useApiIsLoaded, useMapsLibrary } from "@vis.gl/react-google-maps";
+import { useEffect, useRef, type ReactNode } from "react";
+import { APIProvider, InfoWindow, Map, Marker, useApiIsLoaded, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { CATEGORY_META, type Spot } from "@/lib/spots";
 import { areaFromComponents } from "@/lib/googlePlaces";
 
@@ -32,6 +32,29 @@ function MarkerLayer({ spots, onMarkerClick }: { spots: Spot[]; onMarkerClick: (
   );
 }
 
+function FocusHandler({
+  focusLocation,
+  focusToken,
+}: {
+  focusLocation: { lat: number; lng: number } | null;
+  focusToken: number;
+}) {
+  const map = useMap();
+  const lastToken = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!map || !focusLocation || focusToken === lastToken.current) return;
+    lastToken.current = focusToken;
+    map.panTo(focusLocation);
+    const currentZoom = map.getZoom() ?? 6;
+    if (currentZoom < 13) {
+      map.setZoom(15);
+    }
+  }, [map, focusLocation, focusToken]);
+
+  return null;
+}
+
 function MapInner({
   spots,
   onMarkerClick,
@@ -43,6 +66,8 @@ function MapInner({
   popupLocation,
   popupContent,
   onClosePopup,
+  focusLocation,
+  focusToken,
 }: {
   spots: Spot[];
   onMarkerClick: (id: number) => void;
@@ -54,6 +79,8 @@ function MapInner({
   popupLocation: { lat: number; lng: number } | null;
   popupContent: ReactNode;
   onClosePopup: () => void;
+  focusLocation: { lat: number; lng: number } | null;
+  focusToken: number;
 }) {
   const placesLib = useMapsLibrary("places");
 
@@ -76,6 +103,7 @@ function MapInner({
         }
       }}
     >
+      <FocusHandler focusLocation={focusLocation} focusToken={focusToken} />
       <MarkerLayer spots={spots} onMarkerClick={onMarkerClick} />
       {pendingLocation && (
         <InfoWindow position={pendingLocation} onCloseClick={onCancelAdd}>
@@ -83,7 +111,7 @@ function MapInner({
         </InfoWindow>
       )}
       {!pendingLocation && popupLocation && (
-        <InfoWindow position={popupLocation} onCloseClick={onClosePopup}>
+        <InfoWindow position={popupLocation} onCloseClick={onClosePopup} maxWidth={340}>
           {popupContent}
         </InfoWindow>
       )}
@@ -102,6 +130,8 @@ export default function GoogleMapView({
   popupLocation,
   popupContent,
   onClosePopup,
+  focusLocation,
+  focusToken,
 }: {
   spots: Spot[];
   onMarkerClick: (id: number) => void;
@@ -113,6 +143,8 @@ export default function GoogleMapView({
   popupLocation: { lat: number; lng: number } | null;
   popupContent: ReactNode;
   onClosePopup: () => void;
+  focusLocation: { lat: number; lng: number } | null;
+  focusToken: number;
 }) {
   if (!API_KEY) {
     return (
@@ -135,6 +167,8 @@ export default function GoogleMapView({
         popupLocation={popupLocation}
         popupContent={popupContent}
         onClosePopup={onClosePopup}
+        focusLocation={focusLocation}
+        focusToken={focusToken}
       />
     </APIProvider>
   );
