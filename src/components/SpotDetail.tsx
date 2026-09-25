@@ -10,7 +10,6 @@ export default function SpotDetail({
   liked,
   onToggleLike,
   onAddComment,
-  onShare,
   onJumpTo,
 }: {
   spot: Spot;
@@ -18,7 +17,6 @@ export default function SpotDetail({
   liked: boolean;
   onToggleLike: (id: number) => void;
   onAddComment: (id: number, text: string) => void;
-  onShare: (id: number) => void;
   onJumpTo: (id: number) => void;
 }) {
   const [sourceOpen, setSourceOpen] = useState(false);
@@ -140,12 +138,6 @@ export default function SpotDetail({
         >
           行きたい（{spot.likes}）
         </button>
-        <button
-          onClick={() => onShare(spot.id)}
-          className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-900"
-        >
-          シェア画像を作る
-        </button>
       </div>
 
       <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3">
@@ -192,7 +184,7 @@ export default function SpotDetail({
           />
           <button
             onClick={submitComment}
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-900"
+            className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
           >
             投稿
           </button>
