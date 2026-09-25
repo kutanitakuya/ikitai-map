@@ -7,7 +7,11 @@ type Prediction = google.maps.places.PlacePrediction;
 
 const SEARCH_ZOOM = 16;
 
-export default function PlaceSearchBox() {
+export default function PlaceSearchBox({
+  onPlaceSelected,
+}: {
+  onPlaceSelected: (place: google.maps.places.Place) => void;
+}) {
   const map = useMap();
   const placesLib = useMapsLibrary("places");
 
@@ -68,7 +72,7 @@ export default function PlaceSearchBox() {
     sessionToken.current = null;
 
     const place = prediction.toPlace();
-    await place.fetchFields({ fields: ["viewport", "location"] });
+    await place.fetchFields({ fields: ["viewport", "location", "types"] });
     if (!map) return;
     if (place.viewport) {
       map.fitBounds(place.viewport);
@@ -76,6 +80,7 @@ export default function PlaceSearchBox() {
       map.panTo(place.location);
       map.setZoom(SEARCH_ZOOM);
     }
+    onPlaceSelected(place);
   };
 
   const clear = () => {
