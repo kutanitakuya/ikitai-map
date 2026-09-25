@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   APIProvider,
   AdvancedMarker,
@@ -12,12 +12,18 @@ import {
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
 import { CATEGORY_META, type Spot } from "@/lib/spots";
-import { areaFromComponents } from "@/lib/googlePlaces";
+import { areaFromComponents, distanceMeters } from "@/lib/googlePlaces";
 import PlaceSearchBox from "./PlaceSearchBox";
+import PlaceReviewCard from "./PlaceReviewCard";
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 // Advanced Markers には Map ID が必須。未設定時は Google が用意する開発用の DEMO_MAP_ID を使う
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
+
+// 口コミカードを出す対象（お店・施設）。市区町村などのエリアは地図を動かすだけにする
+const REVIEWABLE_TYPES = ["establishment", "point_of_interest"];
+// 検索した場所から、この距離以内にあるアプリの投稿を「同じ場所」とみなす
+const NEARBY_SPOT_METERS = 100;
 
 function MarkerLayer({ spots, onMarkerClick }: { spots: Spot[]; onMarkerClick: (id: number) => void }) {
   return (
@@ -91,6 +97,58 @@ function MapInner({
   focusToken: number;
 }) {
   const placesLib = useMapsLibrary("places");
+  const [searchedPlace, setSearchedPlace] = useState<google.maps.places.Place | null>(null);
+  const searchRequestId = useRef(0);
+
+  const handlePlaceSelected = async (place: google.maps.places.Place) => {
+    const id = ++searchRequestId.current;
+    setSearchedPlace(null);
+    if (!placesLib || !place.types?.some((t) => REVIEWABLE_TYPES.includes(t))) return;
+
+    onCancelAdd();
+    onClosePopup();
+    // 口コミ・評価は料金の高い SKU なので、お店・施設のときだけ別リクエストで取得する
+    const detail = new placesLib.Place({ id: place.id, requestedLanguage: "ja" });
+    try {
+      await detail.fetchFields({
+        fields: [
+          "displayName",
+          "formattedAddress",
+          "addressComponents",
+          "location",
+          "rating",
+          "userRatingCount",
+          "reviews",
+          "googleMapsURI",
+        ],
+      });
+    } catch {
+      return;
+    }
+    if (id === searchRequestId.current) setSearchedPlace(detail);
+  };
+
+  const closeSearchedPlace = () => {
+    searchRequestId.current += 1;
+    setSearchedPlace(null);
+  };
+
+  const searchedLocation = searchedPlace?.location?.toJSON() ?? null;
+  const nearbySpot = searchedLocation
+    ? (spots.find((s) => distanceMeters(s, searchedLocation) <= NEARBY_SPOT_METERS) ?? null)
+    : null;
+
+  const addSearchedPlace = () => {
+    if (!searchedPlace || !searchedLocation) return;
+    closeSearchedPlace();
+    onMapClick(searchedLocation.lat, searchedLocation.lng);
+    onSuggestion(searchedPlace.displayName ?? "", areaFromComponents(searchedPlace.addressComponents));
+  };
+
+  const handleMarkerClick = (id: number) => {
+    closeSearchedPlace();
+    onMarkerClick(id);
+  };
 
   return (
     <div className="relative h-full w-full">
@@ -105,6 +163,7 @@ function MapInner({
         onClick={async (e) => {
           const { latLng, placeId } = e.detail;
           if (!latLng) return;
+          closeSearchedPlace();
           onMapClick(latLng.lat, latLng.lng);
           if (placeId && placesLib) {
             const place = new placesLib.Place({ id: placeId });
@@ -116,7 +175,7 @@ function MapInner({
         }}
       >
         <FocusHandler focusLocation={focusLocation} focusToken={focusToken} />
-        <MarkerLayer spots={spots} onMarkerClick={onMarkerClick} />
+        <MarkerLayer spots={spots} onMarkerClick={handleMarkerClick} />
         {pendingLocation && (
           <InfoWindow position={pendingLocation} onCloseClick={onCancelAdd}>
             {addContent}
@@ -127,8 +186,20 @@ function MapInner({
             {popupContent}
           </InfoWindow>
         )}
+        {!pendingLocation && !popupLocation && searchedPlace && searchedLocation && (
+          <InfoWindow position={searchedLocation} onCloseClick={closeSearchedPlace} maxWidth={340}>
+            <div className="max-h-[65vh] w-[300px] overflow-y-auto pr-1 text-neutral-900">
+              <PlaceReviewCard
+                place={searchedPlace}
+                nearbySpot={nearbySpot}
+                onAddSpot={addSearchedPlace}
+                onOpenSpot={handleMarkerClick}
+              />
+            </div>
+          </InfoWindow>
+        )}
       </Map>
-      <PlaceSearchBox />
+      <PlaceSearchBox onPlaceSelected={handlePlaceSelected} />
     </div>
   );
 }
