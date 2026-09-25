@@ -3,11 +3,11 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
   APIProvider,
+  AdvancedMarker,
+  AdvancedMarkerAnchorPoint,
   ControlPosition,
   InfoWindow,
   Map,
-  Marker,
-  useApiIsLoaded,
   useMap,
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
@@ -16,27 +16,25 @@ import { areaFromComponents } from "@/lib/googlePlaces";
 import PlaceSearchBox from "./PlaceSearchBox";
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+// Advanced Markers には Map ID が必須。未設定時は Google が用意する開発用の DEMO_MAP_ID を使う
+const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
 
 function MarkerLayer({ spots, onMarkerClick }: { spots: Spot[]; onMarkerClick: (id: number) => void }) {
-  const loaded = useApiIsLoaded();
-  if (!loaded || typeof google === "undefined") return null;
-
   return (
     <>
       {spots.map((spot) => (
-        <Marker
+        <AdvancedMarker
           key={spot.id}
           position={{ lat: spot.lat, lng: spot.lng }}
           onClick={() => onMarkerClick(spot.id)}
-          icon={{
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: CATEGORY_META[spot.category].markerColor,
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 2,
-          }}
-        />
+          anchorPoint={AdvancedMarkerAnchorPoint.CENTER}
+          title={spot.name}
+        >
+          <div
+            className="h-4 w-4 rounded-full border-2 border-white shadow-sm"
+            style={{ backgroundColor: CATEGORY_META[spot.category].markerColor }}
+          />
+        </AdvancedMarker>
       ))}
     </>
   );
@@ -97,6 +95,7 @@ function MapInner({
   return (
     <div className="relative h-full w-full">
       <Map
+        mapId={MAP_ID}
         defaultCenter={{ lat: 36, lng: 137.5 }}
         defaultZoom={6}
         gestureHandling="greedy"
