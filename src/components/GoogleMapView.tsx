@@ -1,9 +1,19 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { APIProvider, InfoWindow, Map, Marker, useApiIsLoaded, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
+import {
+  APIProvider,
+  ControlPosition,
+  InfoWindow,
+  Map,
+  Marker,
+  useApiIsLoaded,
+  useMap,
+  useMapsLibrary,
+} from "@vis.gl/react-google-maps";
 import { CATEGORY_META, type Spot } from "@/lib/spots";
 import { areaFromComponents } from "@/lib/googlePlaces";
+import PlaceSearchBox from "./PlaceSearchBox";
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
@@ -85,37 +95,42 @@ function MapInner({
   const placesLib = useMapsLibrary("places");
 
   return (
-    <Map
-      defaultCenter={{ lat: 36, lng: 137.5 }}
-      defaultZoom={6}
-      gestureHandling="greedy"
-      style={{ width: "100%", height: "100%" }}
-      onClick={async (e) => {
-        const { latLng, placeId } = e.detail;
-        if (!latLng) return;
-        onMapClick(latLng.lat, latLng.lng);
-        if (placeId && placesLib) {
-          const place = new placesLib.Place({ id: placeId });
-          await place.fetchFields({ fields: ["displayName", "addressComponents"] });
-          onSuggestion(place.displayName ?? "", areaFromComponents(place.addressComponents));
-        } else {
-          onSuggestion("", "");
-        }
-      }}
-    >
-      <FocusHandler focusLocation={focusLocation} focusToken={focusToken} />
-      <MarkerLayer spots={spots} onMarkerClick={onMarkerClick} />
-      {pendingLocation && (
-        <InfoWindow position={pendingLocation} onCloseClick={onCancelAdd}>
-          {addContent}
-        </InfoWindow>
-      )}
-      {!pendingLocation && popupLocation && (
-        <InfoWindow position={popupLocation} onCloseClick={onClosePopup} maxWidth={340}>
-          {popupContent}
-        </InfoWindow>
-      )}
-    </Map>
+    <div className="relative h-full w-full">
+      <Map
+        defaultCenter={{ lat: 36, lng: 137.5 }}
+        defaultZoom={6}
+        gestureHandling="greedy"
+        // 左上は検索バーを置くので、地図/航空写真の切り替えは左下へ移す
+        mapTypeControlOptions={{ position: ControlPosition.LEFT_BOTTOM }}
+        style={{ width: "100%", height: "100%" }}
+        onClick={async (e) => {
+          const { latLng, placeId } = e.detail;
+          if (!latLng) return;
+          onMapClick(latLng.lat, latLng.lng);
+          if (placeId && placesLib) {
+            const place = new placesLib.Place({ id: placeId });
+            await place.fetchFields({ fields: ["displayName", "addressComponents"] });
+            onSuggestion(place.displayName ?? "", areaFromComponents(place.addressComponents));
+          } else {
+            onSuggestion("", "");
+          }
+        }}
+      >
+        <FocusHandler focusLocation={focusLocation} focusToken={focusToken} />
+        <MarkerLayer spots={spots} onMarkerClick={onMarkerClick} />
+        {pendingLocation && (
+          <InfoWindow position={pendingLocation} onCloseClick={onCancelAdd}>
+            {addContent}
+          </InfoWindow>
+        )}
+        {!pendingLocation && popupLocation && (
+          <InfoWindow position={popupLocation} onCloseClick={onClosePopup} maxWidth={340}>
+            {popupContent}
+          </InfoWindow>
+        )}
+      </Map>
+      <PlaceSearchBox />
+    </div>
   );
 }
 
