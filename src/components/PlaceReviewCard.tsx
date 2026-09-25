@@ -23,7 +23,7 @@ function ReviewItem({ review }: { review: google.maps.places.Review }) {
 
   return (
     <li className="border-t border-neutral-100 py-2">
-      <div className="flex items-center gap-2 text-xs">
+      <div className="flex items-center gap-2 text-sm">
         {author?.uri ? (
           <a href={author.uri} target="_blank" rel="noopener noreferrer" className="font-medium hover:underline">
             {author.displayName}
@@ -31,7 +31,7 @@ function ReviewItem({ review }: { review: google.maps.places.Review }) {
         ) : (
           <span className="font-medium">{author?.displayName ?? "匿名"}</span>
         )}
-        <span className="text-neutral-500">{review.relativePublishTimeDescription}</span>
+        <span className="text-xs text-neutral-500">{review.relativePublishTimeDescription}</span>
       </div>
       {review.rating != null && (
         <div className="text-xs">
@@ -39,7 +39,7 @@ function ReviewItem({ review }: { review: google.maps.places.Review }) {
         </div>
       )}
       {text && (
-        <p className={`mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-700 ${expanded ? "" : "line-clamp-4"}`}>
+        <p className={`mt-1 whitespace-pre-line text-sm leading-relaxed text-neutral-800 ${expanded ? "" : "line-clamp-4"}`}>
           {text}
         </p>
       )}
@@ -73,7 +73,7 @@ export default function PlaceReviewCard({
   return (
     <div>
       <h2 className="text-base font-medium text-neutral-900">{place.displayName}</h2>
-      {address && <p className="mt-0.5 text-xs text-neutral-500">{address}</p>}
+      {address && <p className="mt-0.5 text-sm text-neutral-500">{address}</p>}
       {place.rating != null && (
         <div className="mt-1 flex items-center gap-1 text-sm">
           <span className="font-medium">{place.rating.toFixed(1)}</span>
@@ -104,7 +104,7 @@ export default function PlaceReviewCard({
       </div>
 
       <div className="mt-3">
-        <h3 className="text-xs font-medium text-neutral-900">Google の口コミ</h3>
+        <h3 className="text-sm font-medium text-neutral-900">Google の口コミ</h3>
         {reviews.length > 0 ? (
           <ul className="mt-1">
             {reviews.map((review, i) => (

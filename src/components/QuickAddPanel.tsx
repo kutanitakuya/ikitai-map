@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CATEGORY_META, SOURCE_LABELS, type Category, type SourceType } from "@/lib/spots";
 
 const CATEGORIES = Object.keys(CATEGORY_META) as Category[];
@@ -9,14 +10,19 @@ export interface QuickAddState {
   name: string;
   area: string;
   category: Category;
-  description: string;
-  memo: string;
+  note: string;
+  visibility: "public" | "private";
   sourceType: SourceType | "none";
   sourceLabel: string;
 }
 
+function visibilityClass(active: boolean) {
+  return `flex-1 rounded-md border px-3 py-1.5 text-sm font-medium ${
+    active ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-300 bg-white text-neutral-900"
+  }`;
+}
+
 export default function QuickAddPanel({
-  position,
   looking,
   value,
   onChange,
@@ -24,7 +30,6 @@ export default function QuickAddPanel({
   onSubmit,
   error,
 }: {
-  position: { lat: number; lng: number };
   looking: boolean;
   value: QuickAddState;
   onChange: (next: QuickAddState) => void;
@@ -34,35 +39,54 @@ export default function QuickAddPanel({
 }) {
   const set = <K extends keyof QuickAddState>(key: K, v: QuickAddState[K]) => onChange({ ...value, [key]: v });
 
+  // Google から名前・エリアが取れたときは確認表示だけにし、「編集」を押したときだけ入力欄にする
+  const [editingPlace, setEditingPlace] = useState(false);
+  const showPlaceInputs = editingPlace || (!looking && (!value.name || !value.area));
+
   return (
-    <div className="w-[280px] py-1 text-neutral-900">
-      <p className="mb-1 text-sm font-medium text-neutral-900">新しい行きたい場所</p>
-      <p className="text-xs text-neutral-600">
-        選択した位置: {position.lat.toFixed(5)}, {position.lng.toFixed(5)}
-        {looking && "（付近の場所情報を確認中…）"}
-      </p>
+    <div className="w-[400px] max-w-full py-1 text-neutral-900">
+      <p className="mb-2 text-base font-medium text-neutral-900">新しい行きたい場所</p>
 
-      <div className="mt-3">
-        <label className="mb-1 block text-sm font-medium text-neutral-900">場所の名前</label>
-        <input
-          type="text"
-          value={value.name}
-          onChange={(e) => set("name", e.target.value)}
-          placeholder="例: 三代目綿飴店"
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400"
-        />
-      </div>
-
-      <div className="mt-3">
-        <label className="mb-1 block text-sm font-medium text-neutral-900">エリア</label>
-        <input
-          type="text"
-          value={value.area}
-          onChange={(e) => set("area", e.target.value)}
-          placeholder="例: 東京都台東区"
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400"
-        />
-      </div>
+      {looking ? (
+        <p className="text-sm text-neutral-600">付近の場所情報を確認中…</p>
+      ) : showPlaceInputs ? (
+        <>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-neutral-900">場所の名前</label>
+            <input
+              type="text"
+              value={value.name}
+              onChange={(e) => set("name", e.target.value)}
+              placeholder="例: 三代目綿飴店"
+              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400"
+            />
+          </div>
+          <div className="mt-3">
+            <label className="mb-1 block text-sm font-medium text-neutral-900">エリア</label>
+            <input
+              type="text"
+              value={value.area}
+              onChange={(e) => set("area", e.target.value)}
+              placeholder="例: 東京都台東区"
+              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400"
+            />
+          </div>
+        </>
+      ) : (
+        <div className="flex items-start justify-between gap-3 rounded-md bg-neutral-50 px-3 py-2">
+          <div className="min-w-0">
+            <div className="text-base font-medium text-neutral-900">{value.name}</div>
+            <div className="text-sm text-neutral-600">{value.area}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditingPlace(true)}
+            className="flex-shrink-0 rounded-md px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900"
+          >
+            編集
+          </button>
+        </div>
+      )}
 
       <div className="mt-3">
         <label className="mb-1 block text-sm font-medium text-neutral-900">カテゴリ</label>
@@ -85,29 +109,39 @@ export default function QuickAddPanel({
       </div>
 
       <div className="mt-3">
-        <label className="mb-1 block text-sm font-medium text-neutral-900">説明・口コミ（公開・任意）</label>
+        <label className="mb-1 block text-sm font-medium text-neutral-900">口コミ・メモ</label>
         <textarea
-          value={value.description}
-          onChange={(e) => set("description", e.target.value)}
-          rows={3}
-          placeholder="どんな場所か、なぜ行きたいのかを書いてください"
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400"
+          value={value.note}
+          onChange={(e) => set("note", e.target.value)}
+          rows={4}
+          placeholder={
+            value.visibility === "public"
+              ? "どんな場所か、なぜ行きたいのかを書いてください"
+              : "例: 〇〇さんに勧められた。次の連休に行く。"
+          }
+          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm leading-relaxed text-neutral-900 placeholder:text-neutral-400"
         />
-      </div>
-
-      <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
-        <div className="mb-1.5 flex items-center gap-2">
-          <span className="text-xs font-medium text-amber-900">自分だけのメモ</span>
-          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">非公開</span>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={() => set("visibility", "public")}
+            className={visibilityClass(value.visibility === "public")}
+          >
+            公開
+          </button>
+          <button
+            type="button"
+            onClick={() => set("visibility", "private")}
+            className={visibilityClass(value.visibility === "private")}
+          >
+            非公開（自分だけ）
+          </button>
         </div>
-        <textarea
-          value={value.memo}
-          onChange={(e) => set("memo", e.target.value)}
-          rows={2}
-          placeholder="例: 〇〇さんに勧められた。次の連休に行く。"
-          className="w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-neutral-900 placeholder:text-amber-700/50"
-        />
-        <p className="mt-1.5 text-[11px] text-amber-800">このメモはあなたのブラウザにだけ保存され、他の人には表示されません。</p>
+        <p className="mt-1.5 text-xs text-neutral-600">
+          {value.visibility === "public"
+            ? "口コミとして、ほかの人にも表示されます。"
+            : "自分だけのメモとして、このブラウザにだけ保存されます。ほかの人には表示されません。"}
+        </p>
       </div>
 
       <div className="mt-3">
