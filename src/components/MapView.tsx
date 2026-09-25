@@ -15,8 +15,8 @@ const EMPTY_QUICK_ADD: QuickAddState = {
   name: "",
   area: "",
   category: "tourism",
-  description: "",
-  memo: "",
+  note: "",
+  visibility: "public",
   sourceType: "none",
   sourceLabel: "",
 };
@@ -127,10 +127,12 @@ export default function MapView() {
       setAddError("場所の名前・エリアは必須です。");
       return;
     }
-    if (!quickAdd.description.trim() && !quickAdd.memo.trim()) {
-      setAddError("説明・口コミか、自分だけのメモのどちらかは入力してください。");
+    const note = quickAdd.note.trim();
+    if (!note) {
+      setAddError("口コミ・メモを入力してください。");
       return;
     }
+    const isPublic = quickAdd.visibility === "public";
     const newSpot: Spot = {
       id: Date.now(),
       name: quickAdd.name.trim(),
@@ -138,7 +140,7 @@ export default function MapView() {
       lat: pendingLocation.lat,
       lng: pendingLocation.lng,
       category: quickAdd.category,
-      description: quickAdd.description.trim(),
+      description: isPublic ? note : "",
       dateLabel: "今日",
       recency: Date.now(),
       isNew: true,
@@ -149,8 +151,8 @@ export default function MapView() {
       comments: [],
     };
     addUserSpot(newSpot);
-    if (quickAdd.memo.trim()) {
-      setMemo(newSpot.id, quickAdd.memo.trim());
+    if (!isPublic) {
+      setMemo(newSpot.id, note);
     }
     setSpots((prev) => [...prev, newSpot]);
     setAddError(null);
@@ -237,7 +239,7 @@ export default function MapView() {
             addContent={
               pendingLocation ? (
                 <QuickAddPanel
-                  position={pendingLocation}
+                  key={`${pendingLocation.lat},${pendingLocation.lng}`}
                   looking={pendingLooking}
                   value={quickAdd}
                   onChange={setQuickAdd}
@@ -251,7 +253,7 @@ export default function MapView() {
             onClosePopup={() => setMapPopupId(null)}
             popupContent={
               popupSpot ? (
-                <div className="max-h-[65vh] w-[300px] overflow-y-auto pr-1 text-neutral-900">
+                <div className="max-h-[65vh] w-[400px] max-w-full overflow-y-auto pr-1 text-neutral-900">
                   <SpotDetail
                     spot={popupSpot}
                     allSpots={spots}

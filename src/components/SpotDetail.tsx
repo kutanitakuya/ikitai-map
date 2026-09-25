@@ -85,7 +85,7 @@ export default function SpotDetail({
       )}
 
       {sourceOpen && hasExpandableDetail && (
-        <div className="mt-2 rounded-md bg-neutral-100 p-3 text-xs leading-relaxed text-neutral-800">
+        <div className="mt-2 rounded-md bg-neutral-100 p-3 text-sm leading-relaxed text-neutral-800">
           {(spot.sourceType === "drama" || spot.sourceType === "anime") && (
             <>
               <div className="font-medium text-neutral-900">{spot.workTitle}</div>
@@ -150,7 +150,7 @@ export default function SpotDetail({
 
       <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3">
         <div className="mb-1.5 flex items-center gap-2">
-          <span className="text-xs font-medium text-amber-900">自分だけのメモ</span>
+          <span className="text-sm font-medium text-amber-900">自分だけのメモ</span>
           <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">非公開</span>
         </div>
         <textarea
@@ -158,13 +158,13 @@ export default function SpotDetail({
           onChange={(e) => handleMemoChange(e.target.value)}
           rows={2}
           placeholder="例: 〇〇さんに勧められた。次の連休に行く。"
-          className="w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-neutral-900 placeholder:text-amber-700/50"
+          className="w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-sm text-neutral-900 placeholder:text-amber-700/50"
         />
-        <p className="mt-1.5 text-[11px] text-amber-800">このメモはあなたのブラウザにだけ保存され、他の人には表示されません。</p>
+        <p className="mt-1.5 text-xs text-amber-800">このメモはあなたのブラウザにだけ保存され、他の人には表示されません。</p>
       </div>
 
       <div className="mt-4 border-t border-neutral-200 pt-3">
-        <div className="mb-2 text-xs font-medium text-neutral-700">コメント（公開・{spot.comments.length}）</div>
+        <div className="mb-2 text-sm font-medium text-neutral-700">コメント（公開・{spot.comments.length}）</div>
         <div className="flex flex-col gap-2.5">
           {spot.comments.map((c) => (
             <div key={c.id} className="flex gap-2">
@@ -173,10 +173,10 @@ export default function SpotDetail({
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-neutral-900">{c.name}</span>
-                  <span className="text-[11px] text-neutral-500">{c.time}</span>
+                  <span className="text-sm font-medium text-neutral-900">{c.name}</span>
+                  <span className="text-xs text-neutral-500">{c.time}</span>
                 </div>
-                <div className="text-xs leading-relaxed text-neutral-900">{c.text}</div>
+                <div className="text-sm leading-relaxed text-neutral-900">{c.text}</div>
               </div>
             </div>
           ))}
@@ -188,7 +188,7 @@ export default function SpotDetail({
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitComment()}
             placeholder="コメントを書く"
-            className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400"
+            className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm text-neutral-900 placeholder:text-neutral-400"
           />
           <button
             onClick={submitComment}

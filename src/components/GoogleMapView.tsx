@@ -24,6 +24,8 @@ const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
 const REVIEWABLE_TYPES = ["establishment", "point_of_interest"];
 // 検索した場所から、この距離以内にあるアプリの投稿を「同じ場所」とみなす
 const NEARBY_SPOT_METERS = 100;
+// 地図上のポップアップの最大幅（中身は 400px + 余白）
+const POPUP_MAX_WIDTH = 440;
 
 function MarkerLayer({ spots, onMarkerClick }: { spots: Spot[]; onMarkerClick: (id: number) => void }) {
   return (
@@ -177,18 +179,18 @@ function MapInner({
         <FocusHandler focusLocation={focusLocation} focusToken={focusToken} />
         <MarkerLayer spots={spots} onMarkerClick={handleMarkerClick} />
         {pendingLocation && (
-          <InfoWindow position={pendingLocation} onCloseClick={onCancelAdd}>
+          <InfoWindow position={pendingLocation} onCloseClick={onCancelAdd} maxWidth={POPUP_MAX_WIDTH}>
             {addContent}
           </InfoWindow>
         )}
         {!pendingLocation && popupLocation && (
-          <InfoWindow position={popupLocation} onCloseClick={onClosePopup} maxWidth={340}>
+          <InfoWindow position={popupLocation} onCloseClick={onClosePopup} maxWidth={POPUP_MAX_WIDTH}>
             {popupContent}
           </InfoWindow>
         )}
         {!pendingLocation && !popupLocation && searchedPlace && searchedLocation && (
-          <InfoWindow position={searchedLocation} onCloseClick={closeSearchedPlace} maxWidth={340}>
-            <div className="max-h-[65vh] w-[300px] overflow-y-auto pr-1 text-neutral-900">
+          <InfoWindow position={searchedLocation} onCloseClick={closeSearchedPlace} maxWidth={POPUP_MAX_WIDTH}>
+            <div className="max-h-[65vh] w-[400px] max-w-full overflow-y-auto pr-1 text-neutral-900">
               <PlaceReviewCard
                 place={searchedPlace}
                 nearbySpot={nearbySpot}
