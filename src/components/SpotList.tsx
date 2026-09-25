@@ -7,14 +7,12 @@ export default function SpotList({
   selectedId,
   likedIds,
   onSelect,
-  onShare,
   onToggleLike,
 }: {
   spots: Spot[];
   selectedId: number;
   likedIds: Set<number>;
   onSelect: (id: number) => void;
-  onShare: (id: number) => void;
   onToggleLike: (id: number) => void;
 }) {
   return (
@@ -57,18 +55,6 @@ export default function SpotList({
                     title="行きたい"
                   >
                     {liked ? "♥" : "♡"} {spot.likes}
-                  </span>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onShare(spot.id);
-                    }}
-                    className="text-xs text-neutral-500 underline hover:text-neutral-800"
-                    title="シェア画像を作る"
-                  >
-                    共有
                   </span>
                 </span>
               </div>

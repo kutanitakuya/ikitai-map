@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import GoogleMapView from "./GoogleMapView";
 import SpotList from "./SpotList";
 import SpotDetail from "./SpotDetail";
-import ShareCard from "./ShareCard";
 import QuickAddPanel, { type QuickAddState } from "./QuickAddPanel";
 import { SEED_SPOTS, CATEGORY_META, type Category, type Spot } from "@/lib/spots";
 import { loadUserSpots, addUserSpot, setMemo, loadLikedIds, saveLikedIds } from "@/lib/storage";
@@ -32,14 +31,12 @@ export default function MapView() {
   const [activeCategory, setActiveCategory] = useState<Category | "all">("all");
   const [sortMode, setSortMode] = useState<"new" | "popular">("new");
   const [selectedId, setSelectedId] = useState(4);
-  const [shareId, setShareId] = useState(4);
   const [likedIds, setLikedIds] = useState<Set<number>>(() => new Set(loadLikedIds()));
   const [likedOnly, setLikedOnly] = useState(false);
   const [mapPopupId, setMapPopupId] = useState<number | null>(null);
 
   const [focusToken, setFocusToken] = useState(0);
   const [mobilePane, setMobilePane] = useState<"map" | "list">("map");
-  const [shareOpen, setShareOpen] = useState(false);
 
   const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingLooking, setPendingLooking] = useState(false);
@@ -58,24 +55,17 @@ export default function MapView() {
   );
 
   const selectedSpot = spots.find((s) => s.id === selectedId) ?? spots[0];
-  const shareSpot = spots.find((s) => s.id === shareId) ?? spots[0];
   const popupSpot = spots.find((s) => s.id === mapPopupId) ?? null;
 
   const selectSpot = (id: number, opts: { focus?: boolean; openPopup?: boolean } = {}) => {
     const { focus = false, openPopup = focus } = opts;
     setSelectedId(id);
-    setShareId(id);
     setPendingLocation(null);
     setMapPopupId(openPopup ? id : null);
     if (focus) {
       setFocusToken((t) => t + 1);
       setMobilePane("map");
     }
-  };
-
-  const handleShare = (id: number) => {
-    setShareId(id);
-    setShareOpen(true);
   };
 
   const handleMarkerClick = (id: number) => {
@@ -260,7 +250,6 @@ export default function MapView() {
                     liked={likedIds.has(popupSpot.id)}
                     onToggleLike={toggleLike}
                     onAddComment={addComment}
-                    onShare={handleShare}
                     onJumpTo={(id) => selectSpot(id, { focus: true })}
                   />
                 </div>
@@ -279,7 +268,6 @@ export default function MapView() {
               selectedId={selectedId}
               likedIds={likedIds}
               onSelect={(id) => selectSpot(id, { focus: true })}
-              onShare={handleShare}
               onToggleLike={toggleLike}
             />
           ) : (
@@ -291,30 +279,6 @@ export default function MapView() {
           )}
         </div>
       </div>
-
-      {shareOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setShareOpen(false)}
-        >
-          <div
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-neutral-900">シェア画像を自動生成</h3>
-              <button
-                onClick={() => setShareOpen(false)}
-                aria-label="閉じる"
-                className="rounded-md px-2 py-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
-              >
-                ✕
-              </button>
-            </div>
-            <ShareCard spot={shareSpot} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

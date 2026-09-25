@@ -88,7 +88,7 @@ export default function PlaceReviewCard({
         <button
           type="button"
           onClick={onAddSpot}
-          className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-700"
+          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
           ＋ 行きたい場所に追加
         </button>
